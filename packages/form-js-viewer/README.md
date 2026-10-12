@@ -48,6 +48,35 @@ form.on('changed', 500, (event) => {
 });
 ```
 
+### React to signal buttons
+
+A button with the `signal` action neither submits nor resets the form. On click, it fires `button.signal`, and the application embedding the form decides what happens.
+
+```javascript
+import { get } from 'min-dash';
+
+form.on('button.signal', (event) => {
+  const { signal, path, data } = event;
+
+  if (signal.name === 'lookupCustomer') {
+    // the object holding the button, e.g. its row in a dynamic list
+    const { customerId } = get(data, path);
+
+    lookupCustomer(customerId);
+  }
+});
+```
+
+The event carries:
+
+- `signal`, the button's configured `{ name, validate }`
+- `formField`, the button's schema component
+- `indexes`, the row index of every dynamic list around the button, keyed by the list's id
+- `path`, the data path of the object holding the button, for example `['orders', 2]` for a button in the third row of `orders`, or `[]` at the top level
+- `data`, the same data `submit` emits
+
+A disabled form fires no signal. A read-only form does. With `validate: true`, the form validates first. If it finds errors, it shows them on the fields and fires nothing. A read-only form skips this validation.
+
 ### Customize document preview requests
 
 If you use the `documentPreview` field and need custom authentication for file downloads/previews,

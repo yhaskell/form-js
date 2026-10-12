@@ -277,6 +277,15 @@ describes how to read and set the page from outside the form.
       "key": "reset",
       "label": "Reset",
       "type": "button"
+    },
+    {
+      "action": "signal",
+      "label": "Look up customer",
+      "type": "button",
+      "signal": {
+        "name": "lookupCustomer",
+        "validate": true
+      }
     }
   ],
   "type": "default"
