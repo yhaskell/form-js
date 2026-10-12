@@ -64,10 +64,30 @@
     },
     "action": {
       "$id": "#/component/action",
-      "description": "A button can either trigger a submit or a reset action. Defaults to submit.",
+      "description": "A button can either trigger a submit, a reset or a signal action. Defaults to submit.",
       "default": "submit",
       "type": "string",
-      "enum": ["submit", "reset"]
+      "enum": ["submit", "reset", "signal"]
+    },
+    "signal": {
+      "$id": "#/component/signal",
+      "description": "The signal a button with the signal action fires on click.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "$id": "#/component/signal/name",
+          "description": "Name of the signal, passed to listeners of the button.signal event.",
+          "type": "string",
+          "minLength": 1
+        },
+        "validate": {
+          "$id": "#/component/signal/validate",
+          "description": "Validate the form before firing the signal. An invalid form fires no signal.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": ["name"]
     },
     "source": {
       "$id": "#/component/source",
