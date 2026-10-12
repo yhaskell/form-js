@@ -290,7 +290,176 @@ describe('properties panel', function () {
           expect(editFieldSpy).to.have.been.calledOnce;
           expect(editFieldSpy).to.have.been.calledWith(field, ['action'], 'submit');
         });
+
+        it('should offer signal action', function () {
+          // given
+          const field = schema.components.find(({ action }) => action === 'submit');
+
+          bootstrapPropertiesPanel({
+            container,
+            field,
+          });
+
+          // when
+          const input = screen.getByLabelText('Action');
+
+          // then
+          const options = Array.from(input.options).map(({ value }) => value);
+
+          expect(options).to.eql(['submit', 'reset', 'signal']);
+        });
+
+        it('should remove signal when changing action', function () {
+          // given
+          const editFieldSpy = spy();
+
+          const field = createSignalButton({ name: 'lookup' });
+
+          bootstrapPropertiesPanel({
+            container,
+            editField: editFieldSpy,
+            field,
+          });
+
+          // when
+          const input = screen.getByLabelText('Action');
+
+          fireEvent.input(input, { target: { value: 'submit' } });
+
+          // then
+          expect(editFieldSpy).to.have.been.calledOnce;
+          expect(editFieldSpy).to.have.been.calledWith(field, { action: 'submit', signal: undefined });
+        });
       });
+
+      describe('signal', function () {
+        it('entries', function () {
+          // given
+          const field = createSignalButton({ name: 'lookup' });
+
+          bootstrapPropertiesPanel({
+            container,
+            field,
+          });
+
+          // then
+          expectPanelStructure(container, {
+            General: ['Field label', 'Action', 'Signal name', 'Validate form'],
+            Condition: [],
+            'Custom properties': [],
+          });
+        });
+
+        it('should change name', function () {
+          // given
+          const editFieldSpy = spy();
+
+          const field = createSignalButton({ name: 'lookup', validate: true });
+
+          bootstrapPropertiesPanel({
+            container,
+            editField: editFieldSpy,
+            field,
+          });
+
+          // assume
+          const input = screen.getByLabelText('Signal name');
+
+          expect(input.value).to.equal('lookup');
+
+          // when
+          fireEvent.input(input, { target: { value: 'notify' } });
+
+          // then
+          expect(editFieldSpy).to.have.been.calledOnce;
+          expect(editFieldSpy).to.have.been.calledWith(field, ['signal'], { name: 'notify', validate: true });
+        });
+
+        it('should NOT accept empty name', function () {
+          // given
+          const editFieldSpy = spy();
+
+          const field = createSignalButton({ name: 'lookup' });
+
+          bootstrapPropertiesPanel({
+            container,
+            editField: editFieldSpy,
+            field,
+          });
+
+          const input = screen.getByLabelText('Signal name');
+
+          // when
+          fireEvent.input(input, { target: { value: '' } });
+
+          // then
+          expect(editFieldSpy).not.to.have.been.called;
+
+          const error = screen.getByText('Must not be empty.');
+
+          expect(error).to.exist;
+        });
+
+        it('should enable validation', function () {
+          // given
+          const editFieldSpy = spy();
+
+          const field = createSignalButton({ name: 'lookup' });
+
+          bootstrapPropertiesPanel({
+            container,
+            editField: editFieldSpy,
+            field,
+          });
+
+          // assume
+          const input = screen.getByLabelText('Validate form');
+
+          expect(input.checked).to.be.false;
+
+          // when
+          fireEvent.click(input);
+
+          // then
+          expect(editFieldSpy).to.have.been.calledOnce;
+          expect(editFieldSpy).to.have.been.calledWith(field, ['signal'], { name: 'lookup', validate: true });
+        });
+
+        it('should disable validation', function () {
+          // given
+          const editFieldSpy = spy();
+
+          const field = createSignalButton({ name: 'lookup', validate: true });
+
+          bootstrapPropertiesPanel({
+            container,
+            editField: editFieldSpy,
+            field,
+          });
+
+          // assume
+          const input = screen.getByLabelText('Validate form');
+
+          expect(input.checked).to.be.true;
+
+          // when
+          fireEvent.click(input);
+
+          // then
+          expect(editFieldSpy).to.have.been.calledOnce;
+          expect(editFieldSpy).to.have.been.calledWith(field, ['signal'], { name: 'lookup' });
+        });
+      });
+
+      function createSignalButton(signal) {
+        return {
+          id: 'Button_signal',
+          type: 'button',
+          label: 'Look up',
+          action: 'signal',
+          signal,
+        };
+      }
     });
 
     describe('checkbox', function () {

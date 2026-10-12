@@ -29,6 +29,7 @@ import {
   AcceptEntry,
   MultipleEntry,
   DocumentsDataSourceEntry,
+  SignalEntry,
 } from '../entries';
 
 export function GeneralGroup(field, editField, getService) {
@@ -46,6 +47,7 @@ export function GeneralGroup(field, editField, getService) {
     ...RepeatableEntry({ field, editField, getService }),
     ...DefaultValueEntry({ field, editField, getService }),
     ...ActionEntry({ field, editField }),
+    ...SignalEntry({ field, editField }),
     ...DateTimeEntry({ field, editField, getService }),
     ...TextEntry({ field, editField, getService }),
     ...HtmlEntry({ field, editField, getService }),
