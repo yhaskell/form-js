@@ -1,11 +1,14 @@
 import { expect } from 'chai';
 import { render } from '@testing-library/preact/pure';
+import userEvent from '@testing-library/user-event';
+import { spy } from 'sinon';
 
 import { Button } from '../../../../../src/render/components/form-fields/Button';
 
 import { createFormContainer, expectNoViolations } from '../../../../TestHelper';
 
 import { MockFormContext } from '../helper';
+import { FormMock } from '../helper/mocks';
 
 let container;
 
@@ -103,6 +106,69 @@ describe('Button', function () {
     expect(button.disabled).to.be.true;
   });
 
+  describe('signal', function () {
+    const signalField = {
+      type: 'button',
+      action: 'signal',
+      label: 'Look up',
+      signal: {
+        name: 'lookup',
+      },
+    };
+
+    it('should render as plain button', function () {
+      // when
+      const { container } = createButton({
+        field: signalField,
+      });
+
+      // then
+      const button = container.querySelector('button');
+
+      expect(button).to.exist;
+      expect(button.type).to.equal('button');
+    });
+
+    it('should signal on click', async function () {
+      // given
+      const form = new FormMock({});
+      form._signal = spy();
+
+      const indexes = { List_1: 2 };
+
+      const { container } = createButton({
+        field: signalField,
+        indexes,
+        services: { form },
+      });
+
+      // when
+      await userEvent.click(container.querySelector('button'));
+
+      // then
+      expect(form._signal).to.have.been.calledOnce;
+      expect(form._signal).to.have.been.calledWith({ formField: signalField, indexes });
+    });
+
+    it('should NOT signal on click if disabled', async function () {
+      // given
+      const form = new FormMock({});
+      form._signal = spy();
+
+      const { container } = createButton({
+        field: signalField,
+        disabled: true,
+        services: { form },
+      });
+
+      // when
+      await userEvent.click(container.querySelector('button'));
+
+      // then
+      expect(form._signal).not.to.have.been.called;
+    });
+  });
+
   it('#create', function () {
     // assume
     const { config } = Button;
@@ -157,6 +223,25 @@ describe('Button', function () {
           ...defaultField,
           action: 'reset',
           label: 'Reset',
+        },
+      });
+
+      // then
+      await expectNoViolations(container);
+    });
+
+    it('should have no violations - signal', async function () {
+      // given
+      this.timeout(10000);
+
+      const { container } = createButton({
+        field: {
+          ...defaultField,
+          action: 'signal',
+          label: 'Look up',
+          signal: {
+            name: 'lookup',
+          },
         },
       });
 
