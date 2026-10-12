@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { act } from '@testing-library/preact/pure';
 import userEvent from '@testing-library/user-event';
+import { spy } from 'sinon';
 
 import { createForm, Form } from '../../src';
 
@@ -911,6 +912,70 @@ describe('MultiPage', function () {
       await clickButton('Submit');
 
       // then
+      expect(activePage().querySelector('label').textContent).to.equal('Second');
+    });
+  });
+
+  describe('failed signal validation', function () {
+    const schema = {
+      type: 'default',
+      id: 'SignalMultiPageForm',
+      components: [
+        {
+          type: 'multipage',
+          id: 'Multipage_1',
+          components: [
+            {
+              type: 'page',
+              id: 'Page_1',
+              label: 'First',
+              components: [
+                {
+                  type: 'textfield',
+                  id: 'Textfield_name',
+                  key: 'name',
+                  label: 'Name',
+                  validate: { required: true },
+                },
+              ],
+            },
+            {
+              type: 'page',
+              id: 'Page_2',
+              label: 'Second',
+              components: [
+                {
+                  type: 'button',
+                  id: 'Button_lookup',
+                  label: 'Look up',
+                  action: 'signal',
+                  signal: { name: 'lookup', validate: true },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    it('should stay on the page in view', async function () {
+      // given
+      await bootstrapForm({ schema, data: { name: 'Igor' } });
+
+      await clickButton('Next');
+
+      await act(() => form._setState({ data: { name: '' } }));
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // when
+      await act(() => userEvent.click(activePage().querySelector('.fjs-button')));
+
+      // then
+      expect(signalSpy).not.to.have.been.called;
+      expect(form._getState().errors).to.have.property('Textfield_name');
       expect(activePage().querySelector('label').textContent).to.equal('Second');
     });
   });

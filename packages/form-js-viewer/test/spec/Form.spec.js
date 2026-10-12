@@ -6,6 +6,8 @@ import { createForm, Form, schemaVersion } from '../../src';
 
 import { spy } from 'sinon';
 
+import { get } from 'min-dash';
+
 import { CustomFormFieldsModule } from './custom';
 
 import range from 'lodash/range';
@@ -962,6 +964,300 @@ describe('Form', function () {
 
     // then
     expect(fooSpy).to.have.been.calledOnce;
+  });
+
+  describe('signal button', function () {
+    const signalButton = (id, signal) => ({
+      id,
+      type: 'button',
+      label: id,
+      action: 'signal',
+      signal,
+    });
+
+    const textfield = (key, validate) => ({
+      id: `Textfield_${key}`,
+      type: 'textfield',
+      key,
+      label: key,
+      validate,
+    });
+
+    const createSchema = (components) => ({
+      type: 'default',
+      components,
+    });
+
+    const clickButton = async (label, index = 0) => {
+      const buttons = Array.from(container.querySelectorAll('.fjs-button')).filter(
+        (button) => button.textContent === label,
+      );
+
+      await act(() => userEvent.click(buttons[index]));
+    };
+
+    it('should fire <button.signal>', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        data: { name: 'John' },
+        schema: createSchema([textfield('name'), signalButton('Lookup', { name: 'lookup' })]),
+      });
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // when
+      await clickButton('Lookup');
+
+      // then
+      expect(signalSpy).to.have.been.calledOnce;
+
+      const event = signalSpy.firstCall.args[0];
+
+      expect(event.signal).to.eql({ name: 'lookup' });
+      expect(event.formField.id).to.eql('Lookup');
+      expect(event.indexes).to.eql({});
+      expect(event.path).to.eql([]);
+      expect(event.data).to.eql({ name: 'John' });
+    });
+
+    it('should NOT submit, validate or change data', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        data: { name: '' },
+        schema: createSchema([textfield('name', { required: true }), signalButton('Lookup', { name: 'lookup' })]),
+      });
+
+      const signalSpy = spy();
+      const submitSpy = spy();
+
+      form.on('button.signal', signalSpy);
+      form.on('submit', submitSpy);
+
+      // when
+      await clickButton('Lookup');
+
+      // then
+      expect(signalSpy).to.have.been.calledOnce;
+      expect(submitSpy).not.to.have.been.called;
+
+      expect(form._getState().data).to.eql({ name: '' });
+      expect(form._getState().errors).to.be.empty;
+    });
+
+    it('should NOT fire without a name', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        schema: createSchema([signalButton('Lookup')]),
+      });
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // when
+      await clickButton('Lookup');
+
+      // then
+      expect(signalSpy).not.to.have.been.called;
+    });
+
+    it('should fire if form is read-only', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        schema: createSchema([signalButton('Lookup', { name: 'lookup' })]),
+        properties: {
+          readOnly: true,
+        },
+      });
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // when
+      await clickButton('Lookup');
+
+      // then
+      expect(signalSpy).to.have.been.calledOnce;
+    });
+
+    it('should NOT fire if form is disabled', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        schema: createSchema([signalButton('Lookup', { name: 'lookup' })]),
+        properties: {
+          disabled: true,
+        },
+      });
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // assume
+      expect(container.querySelector('.fjs-button').disabled).to.be.true;
+
+      // when
+      form._signal({ formField: form.get('formFieldRegistry').get('Lookup') });
+
+      // then
+      expect(signalSpy).not.to.have.been.called;
+    });
+
+    it('should locate button in dynamic list', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        data: {
+          orders: [{ product: 'a' }, { product: 'b' }, { product: 'c' }],
+        },
+        schema: createSchema([
+          {
+            id: 'Orders',
+            type: 'dynamiclist',
+            label: 'Orders',
+            path: 'orders',
+            isRepeating: true,
+            components: [textfield('product'), signalButton('Lookup', { name: 'lookup' })],
+          },
+        ]),
+      });
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // when
+      await clickButton('Lookup', 2);
+
+      // then
+      const { indexes, path, data } = signalSpy.firstCall.args[0];
+
+      expect(indexes).to.eql({ Orders: 2 });
+      expect(path).to.eql(['orders', 2]);
+      expect(get(data, path)).to.eql({ product: 'c' });
+    });
+
+    it('should locate button in nested dynamic list', async function () {
+      // given
+      await bootstrapForm({
+        container,
+        data: {
+          orders: [{ items: [{ product: 'a' }] }, { items: [{ product: 'b' }, { product: 'c' }] }],
+        },
+        schema: createSchema([
+          {
+            id: 'Orders',
+            type: 'dynamiclist',
+            label: 'Orders',
+            path: 'orders',
+            isRepeating: true,
+            components: [
+              {
+                id: 'Items',
+                type: 'dynamiclist',
+                label: 'Items',
+                path: 'items',
+                isRepeating: true,
+                components: [textfield('product'), signalButton('Lookup', { name: 'lookup' })],
+              },
+            ],
+          },
+        ]),
+      });
+
+      const signalSpy = spy();
+
+      form.on('button.signal', signalSpy);
+
+      // when
+      await clickButton('Lookup', 2);
+
+      // then
+      const { indexes, path, data } = signalSpy.firstCall.args[0];
+
+      expect(indexes).to.eql({ Orders: 1, Items: 1 });
+      expect(path).to.eql(['orders', 1, 'items', 1]);
+      expect(get(data, path)).to.eql({ product: 'c' });
+    });
+
+    describe('validate', function () {
+      const createValidatingSchema = () =>
+        createSchema([
+          textfield('name', { required: true }),
+          signalButton('Lookup', { name: 'lookup', validate: true }),
+        ]);
+
+      it('should NOT fire if form is invalid', async function () {
+        // given
+        await bootstrapForm({
+          container,
+          schema: createValidatingSchema(),
+        });
+
+        const signalSpy = spy();
+
+        form.on('button.signal', signalSpy);
+
+        // when
+        await clickButton('Lookup');
+
+        // then
+        expect(signalSpy).not.to.have.been.called;
+
+        expect(form._getState().errors).to.have.property('Textfield_name');
+        expect(container.querySelector('.fjs-form-field-error').textContent).to.eql('Field is required.');
+      });
+
+      it('should fire if form is valid', async function () {
+        // given
+        await bootstrapForm({
+          container,
+          data: { name: 'John' },
+          schema: createValidatingSchema(),
+        });
+
+        const signalSpy = spy();
+
+        form.on('button.signal', signalSpy);
+
+        // when
+        await clickButton('Lookup');
+
+        // then
+        expect(signalSpy).to.have.been.calledOnce;
+        expect(signalSpy.firstCall.args[0].data).to.eql({ name: 'John' });
+      });
+
+      it('should fire without validation if form is read-only', async function () {
+        // given
+        await bootstrapForm({
+          container,
+          schema: createValidatingSchema(),
+          properties: {
+            readOnly: true,
+          },
+        });
+
+        const signalSpy = spy();
+
+        form.on('button.signal', signalSpy);
+
+        // when
+        await clickButton('Lookup');
+
+        // then
+        expect(signalSpy).to.have.been.calledOnce;
+        expect(form._getState().errors).to.be.empty;
+      });
+    });
   });
 
   it('should throw error on submit if disabled', async function () {

@@ -193,6 +193,45 @@ export class Form {
   }
 
   /**
+   * @internal
+   *
+   * Fire the signal configured on a signal button. A signal with
+   * `validate` set fires only if the form is valid.
+   *
+   * @param { { formField: any, indexes?: Object } } options
+   */
+  _signal({ formField, indexes = {} }) {
+    const { properties } = this._getState();
+
+    const { signal } = formField;
+
+    if (!signal || !signal.name) {
+      return;
+    }
+
+    // global readonly takes precedence over disabled, as it does for rendering
+    if (properties.disabled && !properties.readOnly) {
+      return;
+    }
+
+    if (signal.validate && !properties.readOnly) {
+      const errors = this.validate();
+
+      if (Object.keys(errors).length) {
+        return;
+      }
+    }
+
+    this._emit('button.signal', {
+      signal,
+      formField,
+      indexes,
+      path: this.get('pathRegistry').getValuePath(formField, { indexes }) || [],
+      data: this._getSubmitData(),
+    });
+  }
+
+  /**
    * @returns {Errors}
    */
   validate() {
