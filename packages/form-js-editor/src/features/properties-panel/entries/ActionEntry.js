@@ -32,6 +32,13 @@ function Action(props) {
   };
 
   const setValue = (value) => {
+    if (value !== 'signal' && field.signal) {
+      return editField(field, {
+        action: value,
+        signal: undefined,
+      });
+    }
+
     return editField(field, path, value);
   };
 
@@ -43,6 +50,10 @@ function Action(props) {
     {
       label: translate('Reset'),
       value: 'reset',
+    },
+    {
+      label: translate('Signal'),
+      value: 'signal',
     },
   ];
 

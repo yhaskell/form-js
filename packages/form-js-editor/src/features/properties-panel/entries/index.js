@@ -46,3 +46,4 @@ export { AcceptEntry } from './AcceptEntry';
 export { MultipleEntry } from './MultipleEntry';
 export { DocumentsDataSourceEntry } from './DocumentsDataSource';
 export { MaxHeightEntry } from './MaxHeightEntry';
+export { SignalEntry } from './SignalEntry';
