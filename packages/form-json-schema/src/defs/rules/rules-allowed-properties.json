@@ -574,6 +574,26 @@
           "verticalAlignment": false
         }
       }
+    },
+    {
+      "if": {
+        "not": {
+          "properties": {
+            "type": {
+              "const": "button"
+            },
+            "action": {
+              "const": "signal"
+            }
+          },
+          "required": ["type", "action"]
+        }
+      },
+      "then": {
+        "properties": {
+          "signal": false
+        }
+      }
     }
   ]
 }

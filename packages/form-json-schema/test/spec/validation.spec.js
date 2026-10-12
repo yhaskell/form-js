@@ -82,8 +82,12 @@ describe('validation', function () {
 
   testForm('iframe');
 
+  testForm('signal');
+
   describe('rules - required properties', function () {
     testForm('no-key');
+
+    testForm('signal-name-required');
   });
 
   describe('rules - allowed properties', function () {
@@ -102,6 +106,8 @@ describe('validation', function () {
     testForm('expression-field-expression-required');
 
     testForm('action-not-allowed');
+
+    testForm('signal-not-allowed');
 
     testForm('source-not-allowed');
 

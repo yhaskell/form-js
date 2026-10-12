@@ -145,6 +145,17 @@
     ],
     [
       {
+        "label": "Create a signal button",
+        "type": "button",
+        "action": "signal",
+        "signal": {
+          "name": "lookupCustomer",
+          "validate": true
+        }
+      }
+    ],
+    [
+      {
         "label": "Create a group",
         "type": "group",
         "components": []
